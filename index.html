@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Astro Schema Check</title>
+<style>body{font-family:system-ui,sans-serif;background:#0f1115;color:#e6e6e6;max-width:640px;margin:0 auto;padding:20px}textarea{width:100%;min-height:150px;background:#181b22;color:#e6e6e6;border:1px solid #333;border-radius:8px;padding:10px;font-family:monospace;box-sizing:border-box}button{background:#7dd3a8;color:#0f1115;border:0;border-radius:8px;padding:12px 18px;font-weight:700;margin-top:12px}.ok{color:#7dd3a8}.bad{color:#ff8a8a}li{margin:6px 0}</style></head><body>
+<h1>Astro Schema Check</h1>
+<p>Find out why Astro dropped your post.</p>
+<h3>1. Your schema</h3>
+<textarea id="schema">title: string
+description: string
+pubDate: date
+author: string
+category: string
+tags: array
+draft?: boolean</textarea>
+<h3>2. Post frontmatter (between the --- lines)</h3>
+<textarea id="fm"></textarea>
+<button id="go">Check</button>
+<ul id="out"></ul>
+<script>
+function parse(text){var o={},errs=[],cur=null;text.split("\n").forEach(function(l,i){if(!l.trim())return;if(l.indexOf("\t")>-1)errs.push("Line "+(i+1)+": contains a tab. YAML needs spaces.");var li=l.match(/^\s*-\s+(.*)$/);if(li&&cur){if(!Array.isArray(o[cur]))o[cur]=[];o[cur].push(li[1]);return}var m=l.match(/^([A-Za-z0-9_]+):\s*(.*)$/);if(!m){errs.push("Line "+(i+1)+": not in key: value form -> "+l);return}if(m[2]&&l.charAt(m[1].length+1)!==" ")errs.push("Line "+(i+1)+": missing space after the colon");cur=m[1];o[cur]=m[2]});return{o:o,errs:errs}}
+function check(t,v){if(Array.isArray(v))return t==="array"?null:"is a list but the schema expects "+t;v=String(v).trim();if(t==="array")return /^\[.*\]$/.test(v)?null:"must be a list like [a, b]";if(v==="")return "is empty";if(t==="date"){if(/^["]/.test(v))return "is quoted. A quoted date is text, so it fails z.date() (it only passes z.coerce.date())";return(/^\d{4}-\d{2}-\d{2}/.test(v)&&!isNaN(new Date(v)))?null:"is not a valid date (use 2026-10-01)"}if(t==="boolean")return(v==="true"||v==="false")?null:"must be true or false";if(t==="number")return isNaN(Number(v))?"is not a number":null;if(t==="string"){if(/^(true|false|null|-?\d+(\.\d+)?)$/.test(v))return "is read by YAML as a number or boolean, not text. Wrap it in quotes";if(!/^["]/.test(v)&&v.indexOf(": ")>-1)return "contains a colon and a space. Wrap the whole value in quotes or YAML breaks"}return null}
+document.getElementById("go").onclick=function(){var out=document.getElementById("out");out.innerHTML="";function add(c,t){var li=document.createElement("li");li.className=c;li.textContent=t;out.appendChild(li)}var p=parse(document.getElementById("fm").value),bad=p.errs.length;p.errs.forEach(function(e){add("bad",e)});document.getElementById("schema").value.split("\n").forEach(function(l){var m=l.trim().match(/^([A-Za-z0-9_]+)(\?)?:\s*(\w+)$/);if(!m)return;var k=m[1],opt=!!m[2],t=m[3],v=p.o[k];if(v===undefined||v===""){if(!opt){add("bad",k+": missing or empty (required "+t+")");bad++}return}var r=check(t,v);if(r){add("bad",k+": "+r);bad++}});if(!bad)add("ok","No schema problems found. If the post still does not show, check that the file is .md in src/content/posts, draft is not true, and the dev server was restarted.")};
+</script></body></html>
