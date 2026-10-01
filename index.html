@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Astro Schema Check</title>
 <style>body{font-family:system-ui,sans-serif;background:#0f1115;color:#e6e6e6;max-width:640px;margin:0 auto;padding:20px}textarea{width:100%;min-height:150px;background:#181b22;color:#e6e6e6;border:1px solid #333;border-radius:8px;padding:10px;font-family:monospace;box-sizing:border-box}button{background:#7dd3a8;color:#0f1115;border:0;border-radius:8px;padding:12px 18px;font-weight:700;margin-top:12px}.ok{color:#7dd3a8}.bad{color:#ff8a8a}li{margin:6px 0}</style></head><body>
 <h1>Astro Schema Check</h1>
-<p>Find out why Astro dropped your post.</p>
+<p>Paste a post. See exactly why Astro silently dropped it, and how to fix it.</p>
 <h3>1. Your schema</h3>
 <textarea id="schema">title: string
 description: string
@@ -15,6 +15,7 @@ draft?: boolean</textarea>
 <textarea id="fm"></textarea>
 <button id="go">Check</button>
 <ul id="out"></ul>
+<section style="margin-top:28px;padding:18px;border:1px solid #333;border-radius:12px"><h3>Get new Astro traps and their fixes by email</h3><p>Notes on the bugs I fix. One email per new post, no spam.</p><iframe src="https://1e701ddc.sibforms.com/serve/MUIFAGE2w2K3OOXp5L9tESqI_mzlNdQiOfP0ZX9R2TCoh8aI93B94CsxY2nIuMzadfODCch3ov8tOG6Te3rK8P1CQnI5gYuo12_mIZkBL-RZH-bjRzfvO-6_Wm1H98qoN4fjbJjtjzgnkR0pM0jDxT4hbv-qCopTyaLJmAMSEWYk9Gwkj5agCBkST88VT45sYWGyIN9oGeEDxHfyWA==" title="Subscribe" loading="lazy" width="100%" height="560" style="border:0;border-radius:10px"></iframe></section>
 <script>
 function parse(text){var o={},errs=[],cur=null;text.split("\n").forEach(function(l,i){if(!l.trim())return;if(l.indexOf("\t")>-1)errs.push("Line "+(i+1)+": contains a tab. YAML needs spaces.");var li=l.match(/^\s*-\s+(.*)$/);if(li&&cur){if(!Array.isArray(o[cur]))o[cur]=[];o[cur].push(li[1]);return}var m=l.match(/^([A-Za-z0-9_]+):\s*(.*)$/);if(!m){errs.push("Line "+(i+1)+": not in key: value form -> "+l);return}if(m[2]&&l.charAt(m[1].length+1)!==" ")errs.push("Line "+(i+1)+": missing space after the colon");cur=m[1];o[cur]=m[2]});return{o:o,errs:errs}}
 function check(t,v){if(Array.isArray(v))return t==="array"?null:"is a list but the schema expects "+t;v=String(v).trim();if(t==="array")return /^\[.*\]$/.test(v)?null:"must be a list like [a, b]";if(v==="")return "is empty";if(t==="date"){if(/^["]/.test(v))return "is quoted. A quoted date is text, so it fails z.date() (it only passes z.coerce.date())";return(/^\d{4}-\d{2}-\d{2}/.test(v)&&!isNaN(new Date(v)))?null:"is not a valid date (use 2026-10-01)"}if(t==="boolean")return(v==="true"||v==="false")?null:"must be true or false";if(t==="number")return isNaN(Number(v))?"is not a number":null;if(t==="string"){if(/^(true|false|null|-?\d+(\.\d+)?)$/.test(v))return "is read by YAML as a number or boolean, not text. Wrap it in quotes";if(!/^["]/.test(v)&&v.indexOf(": ")>-1)return "contains a colon and a space. Wrap the whole value in quotes or YAML breaks"}return null}
